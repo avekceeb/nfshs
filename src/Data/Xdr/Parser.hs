@@ -24,8 +24,9 @@ isAlphaNum' :: Char -> Bool
 isAlphaNum' c = (isAlphaNum c) || (c == '_')
 
 alphaNumChar' :: (MonadParsec e s m, Token s ~ Char) => m (Token s)
+-- for resolver 13:
+-- alphaNumChar' = satisfy isAlphaNum' <?> "plus underscore alphanumeric character"
 alphaNumChar' = L.satisfy isAlphaNum' <?> "plus underscore alphanumeric character"
-
 -- #########################################################
 
 
