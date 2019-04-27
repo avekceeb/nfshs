@@ -1,0 +1,38 @@
+( [ Right (ConstantDef (Identifier "DEC") (DecConstant 42))
+  , Right (ConstantDef (Identifier "DECN") (DecConstant 0))
+  , Right (ConstantDef (Identifier "HEX") (HexConstant 871849179838))
+  , Right (ConstantDef (Identifier "OCT") (OctConstant 342391))
+  ]
+, ParserState
+    [ ( SourcePos
+          { sourceName = "test/samples/constant-def.xdr"
+          , sourceLine = Pos 25
+          , sourceColumn = Pos 1
+          }
+      , ConstantDef (Identifier "OCT") (OctConstant 342391)
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/constant-def.xdr"
+          , sourceLine = Pos 23
+          , sourceColumn = Pos 1
+          }
+      , ConstantDef (Identifier "HEX") (HexConstant 871849179838)
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/constant-def.xdr"
+          , sourceLine = Pos 21
+          , sourceColumn = Pos 1
+          }
+      , ConstantDef (Identifier "DECN") (DecConstant 0)
+      )
+    , ( SourcePos
+          { sourceName = "test/samples/constant-def.xdr"
+          , sourceLine = Pos 20
+          , sourceColumn = Pos 1
+          }
+      , ConstantDef (Identifier "DEC") (DecConstant 42)
+      )
+    ]
+    []
+    (fromList [] :| [])
+)

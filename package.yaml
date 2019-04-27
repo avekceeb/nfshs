@@ -1,0 +1,85 @@
+name:                nfs
+version:             0.0.0.1
+github:              "avekceeb/nfs"
+license:             BSD3
+author:              "Dmitry Alexeev"
+maintainer:          "avekceeb at gmail dot com"
+copyright:           "2019 Dmitry Alexeev"
+synopsis:            NFS packets
+category:            parsing
+description:         Work In Progress
+
+default-extensions:
+- NoImplicitPrelude
+- OverloadedStrings
+- EmptyCase
+- FlexibleContexts
+- FlexibleInstances
+- InstanceSigs
+- MultiParamTypeClasses
+- LambdaCase
+- MultiWayIf
+- NamedFieldPuns
+- TupleSections
+- GeneralizedNewtypeDeriving
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wredundant-constraints
+- -fprint-expanded-synonyms
+
+dependencies:
+- base >= 4.9 && < 5
+- bytestring
+- containers
+- megaparsec
+- mmorph
+- mtl
+- protolude
+- semigroups
+- text
+- binary
+
+library:
+  source-dirs: src
+
+executables:
+  render-exe:
+    main:                Main.hs
+    source-dirs:         render
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - nfs
+  client-exe:
+    main:                Main.hs
+    source-dirs:         client
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - binary
+    - nfs
+
+tests:
+  xdr-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - nfs
+    - base >= 4.7 && < 5
+    - filepath
+    - protolude
+    - tasty
+    - tasty-golden
+    - pretty-show
