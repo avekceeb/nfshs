@@ -27,13 +27,19 @@ data Opaque = Opaque
 -- Example of enum
 data MsgType = CALL | REPLY deriving (Show, Eq)
 
+instance Enum MsgType where
+  fromEnum CALL = 0
+  fromEnum REPLY = 1
+  toEnum 0 = CALL
+  toEnum 1 = REPLY
 
--- trick from stackoverflow
+-- .. OR : trick from stackoverflow
+{-
 instance Enum MsgType where
     fromEnum = fromJust . flip lookup table
     toEnum   = fromJust . flip lookup (map swap table)
 table = [(CALL, 0), (REPLY, 1)]
-
+-}
 
 -- Example of switched union
 data MsgBody = MsgBody
@@ -49,24 +55,11 @@ data CallBody = CallBody
 
 
 data ReplyBody = ReplyBody
-    { bar :: Opaque
+    { bar :: String
     } deriving (Show)
 
 
 data RpcMsg = RpcMsg
     { xid :: Int32
     , msg :: MsgBody
-    } deriving (Show)
-
-
-data Smth = Smth
-    { yy :: Int32
-    , zz :: Int32
-    } deriving (Show)
-
-
-data Dummy = Dummy
-    { xx :: Int32
-    , sm :: Smth
-    , tt :: MsgType
     } deriving (Show)

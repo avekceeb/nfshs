@@ -21,9 +21,7 @@ doRender = do
     putStrLn empty
     let par = runStatefulParser specification
         res = runParser par xdrsource (pack raw)
-    print res
-    putStrLn empty
-    putStrLn empty
+    -- print res
     case res of
         Right (spec, _) -> renderSpec spec
         _ -> putStrLn empty
