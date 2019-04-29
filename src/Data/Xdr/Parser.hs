@@ -110,25 +110,28 @@ unionBody = body
     [ DiscriminantInt         <$> (typeInt  *> identifier)
     , DiscriminantUnsignedInt <$> (typeUInt *> identifier)
     , DiscriminantBool        <$> (typeBool *> identifier)
-    , DiscriminantEnum        <$> (typeEnum *> identifier)
+    -- TODO: added this fake stuff because of changed DiscriminantEnum ctor
+    -- in order to keep Enum type info
+    , DiscriminantEnum   (Identifier "XXX")     <$> (typeEnum *> identifier)
     , do (posRef, IdentifierRef r) <- positioned identifierRef
          pid <- positioned identifier
          parserState <- get
          typeSpec <- PS.typeSpecById (Identifier r) parserState &
            maybe (invalidDiscriminant posRef) (pure . unPositioned)
-         typedDiscriminant pid typeSpec
+         typedDiscriminant pid typeSpec (Identifier r)
     ] where
-
+    -- TODO: signature changed for DiscriminantEnum case
     typedDiscriminant
       :: Parsing p
       => Positioned Identifier
       -> TypeSpecifier
+      -> Identifier
       -> p Discriminant
-    typedDiscriminant (_, id) TypeInt         = pure $ DiscriminantInt  id
-    typedDiscriminant (_, id) TypeUnsignedInt = pure $ DiscriminantUnsignedInt id
-    typedDiscriminant (_, id) TypeBool        = pure $ DiscriminantBool id
-    typedDiscriminant (_, id) (TypeEnum _)    = pure $ DiscriminantEnum id
-    typedDiscriminant (pos, _) ts             = invalidDiscriminantType ts pos
+    typedDiscriminant (_, id) TypeInt         _ = pure $ DiscriminantInt  id
+    typedDiscriminant (_, id) TypeUnsignedInt _ = pure $ DiscriminantUnsignedInt id
+    typedDiscriminant (_, id) TypeBool        _ = pure $ DiscriminantBool id
+    typedDiscriminant (_, id) (TypeEnum _)  eid = pure $ DiscriminantEnum eid id
+    typedDiscriminant (pos, _) ts           _   = invalidDiscriminantType ts pos
 
   unionArms :: Parsing p => p (NonEmpty CaseSpec)
   unionArms = L.nonEmptyLines $

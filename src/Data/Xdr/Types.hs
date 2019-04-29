@@ -23,11 +23,15 @@ data Declaration
   | DeclarationVoid
   deriving (Eq, Ord, Show)
 
+-- newtype Discriminant =
+--   DeclarationSingle TypeSpecifier Identifier
+--   deriving (Eq, Ord, Show)
+
 data Discriminant
   = DiscriminantInt Identifier
   | DiscriminantUnsignedInt Identifier
   | DiscriminantBool Identifier
-  | DiscriminantEnum Identifier
+  | DiscriminantEnum Identifier Identifier
   deriving (Eq, Ord, Show)
 
 type Value = Either Constant IdentifierRef

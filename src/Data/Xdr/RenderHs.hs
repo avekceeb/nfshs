@@ -10,6 +10,12 @@ import           Data.Either
 import           Data.Text hiding (empty, intercalate, map)
 import           Data.List
 
+{-
+choice :: (Foldable f, Alternative m) => f (m a) -> m a
+  	-- Defined in ‘parser-combinators-1.0.0:Control.Applicative.Combinators’
+find :: Foldable t => (a -> Bool) -> t a -> Maybe a
+  	-- Defined in ‘Data.Foldable’
+-}
 
 eol :: String
 eol = "\n"
@@ -196,10 +202,49 @@ renderDeclaration (DeclarationString ident (Nothing)) =
   renderIdentifier ident
   ++ " :: String"
 renderDeclaration (DeclarationVoid) = empty
--- renderDeclaration (DeclarationOptional ts ident) =
---     renderTypeSpecifier ts
---     ++ " *" -- see RFC
---     ++ renderIdentifier ident
+-- TODO:
+renderDeclaration (DeclarationOptional ts ident) =
+  renderIdentifier ident
+  ++ " :: " ++ renderTypeSpecifier ts
+  ++ indent ++ comment ++ "OPTIONAL"
+
+-- TODO: DONT COPY YOURSELF...
+renderMaybeDeclaration :: Declaration -> String
+renderMaybeDeclaration (DeclarationArrayFixLen ts ident val) =
+  renderIdentifier ident
+  ++ " :: Maybe ["
+  ++ renderTypeSpecifier ts
+  ++ "]"
+renderMaybeDeclaration (DeclarationOpaqueFixLen ident val) =
+  renderIdentifier ident
+  ++ " :: Maybe String"
+renderMaybeDeclaration (DeclarationOpaqueVarLen ident (Just val)) =
+  renderIdentifier ident
+  ++ " :: Maybe String"
+renderMaybeDeclaration (DeclarationOpaqueVarLen ident (Nothing)) =
+  renderIdentifier ident
+  ++ " :: Maybe String"
+renderMaybeDeclaration (DeclarationSingle ts ident) =
+  renderIdentifier ident
+  ++ " :: Maybe "
+  ++ renderTypeSpecifier ts
+renderMaybeDeclaration (DeclarationArrayVarLen ts ident (Just val)) =
+  renderIdentifier ident
+  ++ " :: Maybe ["
+  ++ renderTypeSpecifier ts
+  ++ "]"
+renderMaybeDeclaration (DeclarationArrayVarLen ts ident (Nothing)) =
+  renderIdentifier ident
+  ++ " :: Maybe["
+  ++ renderTypeSpecifier ts
+  ++ "]"
+renderMaybeDeclaration (DeclarationString ident (Just val)) =
+  renderIdentifier ident
+  ++ " :: Maybe String"
+renderMaybeDeclaration (DeclarationString ident (Nothing)) =
+  renderIdentifier ident
+  ++ " :: Maybe String"
+renderMaybeDeclaration (DeclarationVoid) = empty
 
 renderTypeSpecifier :: TypeSpecifier -> String
 renderTypeSpecifier (TypeInt) = "Int32"
@@ -242,7 +287,7 @@ renderUnionBody x =
   eol
   ++ indent
   ++ "{ "
-  ++ d ++ " :: ENUM_TYPE_TODO"
+  ++ d
   ++ eol
   ++ c
   ++ s
@@ -257,13 +302,13 @@ renderDiscriminant :: Discriminant -> String
 renderDiscriminant (DiscriminantInt x) = renderIdentifier x
 renderDiscriminant (DiscriminantUnsignedInt x) = renderIdentifier x
 renderDiscriminant (DiscriminantBool x) = renderIdentifier x
-renderDiscriminant (DiscriminantEnum x) = renderIdentifier x
+renderDiscriminant (DiscriminantEnum typeId varId) =
+  (renderIdentifier varId) ++ " :: " ++ (renderIdentifier typeId)
 
 
 renderCaseSpec :: NonEmpty CaseSpec -> String
 renderCaseSpec (x:|xs) =
-  renderCaseSpecItem x
-  ++ intercalate "" (map renderCaseSpecItem xz)
+  intercalate "" (map renderCaseSpecItem xz)
   where xz = x:xs
 
 
@@ -271,14 +316,14 @@ renderCaseSpecItem :: CaseSpec -> String
 renderCaseSpecItem (CaseSpec _ (DeclarationVoid)) = empty
 renderCaseSpecItem x =
   indent ++ ", "
-  -- TODO : add Maybe
-  ++ renderDeclaration (caseSpecDeclaration x)
+  ++ renderMaybeDeclaration (caseSpecDeclaration x)
   ++ eol
 
 
 renderUnionDefault :: Maybe Declaration -> String
 renderUnionDefault (Nothing) = empty
+renderUnionDefault (Just DeclarationVoid) = empty
 renderUnionDefault (Just x) =
   indent ++ ", "
-  ++ renderDeclaration x
+  ++ renderMaybeDeclaration x
   ++ eol

@@ -213,7 +213,7 @@ renderDiscriminant :: Discriminant -> String
 renderDiscriminant (DiscriminantInt x) = renderIdentifier x
 renderDiscriminant (DiscriminantUnsignedInt x) = renderIdentifier x
 renderDiscriminant (DiscriminantBool x) = renderIdentifier x
-renderDiscriminant (DiscriminantEnum x) = renderIdentifier x
+renderDiscriminant (DiscriminantEnum x y) = renderIdentifier x
 
 
 renderCaseSpec :: NonEmpty CaseSpec -> String
