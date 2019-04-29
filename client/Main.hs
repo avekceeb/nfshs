@@ -13,8 +13,12 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 import           Data.Binary.Get
 import           Data.Binary.Put
+{-
 import           Data.RpcHandmade.Rpc
 import           Data.RpcHandmade.Types
+-}
+import           Data.Rpc.Rpc
+import           Data.Rpc.Nfs4
 
 -- from GHC.Base
 -- ???
@@ -23,6 +27,7 @@ import           Data.RpcHandmade.Types
 -- rpcmsg :: BL.ByteString
 -- rpcmsg = BLC.pack "\xff\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x41\x42\x43\x09\x00\x00\x00\x01\x00\x00\x00"
 
+{-
 sample :: BL.ByteString
 sample = BLC.pack "Hello World!"
 sample' :: B.ByteString
@@ -37,3 +42,9 @@ main = do
       (MsgBody REPLY Nothing
         (Just (ReplyBody "Hey There...")) )))
     --BL.putStr $ runPut (packOpaque sample)
+-}
+
+main :: IO ()
+main = do
+  BL.putStr $ runPut (packMsgBody $ Rpc_msg_body REPLY Nothing Nothing)
+  BL.putStr $ runPut (packAuthsys_parms $ Authsys_parms 1::Int32 "xxx" 2::Int32 3::Int32 [5,6]::Int32)

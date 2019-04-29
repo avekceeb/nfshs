@@ -7,8 +7,9 @@ import           System.Environment
 import           Data.Xdr.Parser
 import           Data.Xdr.Types
 import           Data.Either
-import           Data.Text hiding (empty, intercalate, map)
+import           Data.Text hiding (empty, intercalate, map, toUpper)
 import           Data.List
+import           Data.Char (toUpper)
 
 {-
 choice :: (Foldable f, Alternative m) => f (m a) -> m a
@@ -17,52 +18,73 @@ find :: Foldable t => (a -> Bool) -> t a -> Maybe a
   	-- Defined in ‘Data.Foldable’
 -}
 
+
 eol :: String
 eol = "\n"
+
 
 comment :: String
 comment = "-- "
 
+
 indent :: String
 indent = "  "
+
 
 sep :: String
 sep = " "
 
+
 finishEnum :: String
 finishEnum = "deriving (Eq, Show)"
 
+
+capitalize :: String -> String
+capitalize [] = []
+capitalize (x:xs) = toUpper x : xs
+
+
 doRender::IO()
 doRender = do
-    putStrLn empty
-    [xdrsource] <- getArgs
-    raw   <- readFile xdrsource
-    let par = runStatefulParser specification
-        res = runParser par xdrsource (pack raw)
-    -- print res
-    case res of
-        Right (spec, _) -> renderSpec spec
-        _ -> putStrLn empty
+  putStrLn empty
+  [xdrsource] <- getArgs
+  raw   <- readFile xdrsource
+  let par = runStatefulParser specification
+      res = runParser par xdrsource (pack raw)
+  -- print res
+  case res of
+    Right (spec, _) -> renderSpec spec
+    _ -> putStrLn empty
 
 
 renderSpec :: Specification -> IO()
 renderSpec [] = putStrLn empty
 renderSpec (x:xs) = do
-    case x of
-        Right constdef -> putStrLn $ renderConstantDef constdef
-        Left typedef -> putStrLn $ renderTypeDef typedef
-    renderSpec xs
+  case x of
+    Right constdef -> putStrLn $ renderConstantDef constdef
+    Left typedef -> putStrLn $ renderTypeDef typedef
+  renderSpec xs
 
 
 renderConstantDef :: ConstantDef -> String
 renderConstantDef (ConstantDef idnt exp) =
-    (renderIdentifier idnt)
-    ++ " = "
-    ++ (renderConstant exp)
+  (renderIdentifier idnt)
+  ++ " = "
+  ++ (renderConstant exp)
 
 
 renderIdentifier :: Identifier -> String
-renderIdentifier (Identifier x) = (unpack x)
+renderIdentifier (Identifier x) = unpack x
+
+
+-- Ensure Capitalization for Types
+renderTypeIdentifier :: Identifier -> String
+renderTypeIdentifier (Identifier x) = capitalize $ unpack x
+
+
+-- ? TypeIdentifier IdentifierRef ?
+renderTypeIdentifier' :: IdentifierRef -> String
+renderTypeIdentifier' (IdentifierRef x) = capitalize $ unpack x
 
 
 renderValue :: Value -> String
@@ -77,25 +99,44 @@ renderConstant (OctConstant x) = show x
 
 
 renderTypeDef :: TypeDef -> String
-renderTypeDef (TypeDef x) =
-  comment ++ "TypeDef"
 renderTypeDef (TypeDefEnum ident body) = renderTypeDefEnum ident body
 renderTypeDef (TypeDefStruct ident body) = renderTypeDefStruct ident body
 renderTypeDef (TypeDefUnion ident body) = renderTypeDefUnion ident body
+renderTypeDef (TypeDef decl) = renderTypeDeclaration decl
+
+
+renderTypeDeclaration :: Declaration -> String
+renderTypeDeclaration  (DeclarationSingle ts ident ) =
+  "type " ++ renderTypeIdentifier ident ++ " = " ++ renderTypeSpecifier ts ++ eol
+renderTypeDeclaration  (DeclarationArrayFixLen ts ident _)  =
+  "type " ++ renderTypeIdentifier ident ++ " = [" ++ renderTypeSpecifier ts ++ "]" ++ eol
+renderTypeDeclaration  (DeclarationArrayVarLen ts ident _) =
+  "type " ++ renderTypeIdentifier ident ++ " = [" ++ renderTypeSpecifier ts ++ "]" ++ eol
+renderTypeDeclaration  (DeclarationOpaqueFixLen ident _) =
+  "type " ++ renderTypeIdentifier ident ++ " = String" ++ eol
+renderTypeDeclaration  (DeclarationOpaqueVarLen ident _) =
+  "type " ++ renderTypeIdentifier ident ++ " = String" ++ eol
+renderTypeDeclaration  (DeclarationString ident _) =
+  "type " ++ renderTypeIdentifier ident ++ " = String" ++ eol
+renderTypeDeclaration  (DeclarationOptional ts ident) =
+  "type " ++ renderTypeIdentifier ident ++ " = " ++ renderTypeSpecifier ts ++ eol
+renderTypeDeclaration  (DeclarationVoid) = empty
+renderTypeDeclaration x =
+  comment ++ "TODO: Typedef"
 
 
 -- | data MsgType = CALL | REPLY deriving (Show, Eq)
 renderTypeDefEnum :: Identifier -> EnumBody -> String
 renderTypeDefEnum ident body =
   "data "
-  ++ renderIdentifier ident
+  ++ renderTypeIdentifier ident
   ++ renderEnumBody body
   ++ renderEnumInstance ident body
   ++ eol
 
 
 renderEnumEntryName :: (Identifier, Value) -> String
-renderEnumEntryName (ident, _) = renderIdentifier ident
+renderEnumEntryName (ident, _) = renderTypeIdentifier ident
 
 
 renderEnumBody :: EnumBody -> String
@@ -114,30 +155,34 @@ renderEnumBody (x:|xs) =
 renderEnumInstance :: Identifier -> EnumBody -> String
 renderEnumInstance ident body =
   "instance Enum "
-  ++ renderIdentifier ident
+  ++ renderTypeIdentifier ident
   ++ " where\n"
   ++ renderEnumeration body
 
 
 renderEnumeration :: EnumBody -> String
 renderEnumeration (x:|xs) =
-  intercalate eol (map renderIdentifierValue xz)
+  intercalate eol (map renderIdentifierValueFromEnum xz)
+  ++ eol
+  ++ intercalate eol (map renderIdentifierValueToEnum xz)
   where xz = x:xs
 
 
-renderIdentifierValue :: (Identifier, Value) -> String
-renderIdentifierValue (i, v) =
-    indent
-    ++ "fromEnum "
-    ++ renderIdentifier i
-    ++ " = "
-    ++ renderValue v
-    ++ eol
-    ++ indent
-    ++ "toEnum "
-    ++ renderValue v
-    ++ " = "
-    ++ renderIdentifier i
+renderIdentifierValueFromEnum :: (Identifier, Value) -> String
+renderIdentifierValueFromEnum (i, v) =
+  indent
+  ++ "fromEnum "
+  ++ renderTypeIdentifier i
+  ++ " = "
+  ++ renderValue v
+
+renderIdentifierValueToEnum :: (Identifier, Value) -> String
+renderIdentifierValueToEnum (i, v) =
+  indent
+  ++ "toEnum "
+  ++ renderValue v
+  ++ " = "
+  ++ renderTypeIdentifier i
 
 -- data RpcMsg = RpcMsg
 --     { xid :: Int32
@@ -149,7 +194,7 @@ renderTypeDefStruct ident body =
   ++ i ++ " = " ++ i
   ++ renderStructBody body
   ++ eol
-  where i = renderIdentifier ident
+  where i = renderTypeIdentifier ident
 
 renderStructBody :: StructBody -> String
 renderStructBody (x:|xs) =
@@ -249,8 +294,8 @@ renderMaybeDeclaration (DeclarationVoid) = empty
 renderTypeSpecifier :: TypeSpecifier -> String
 renderTypeSpecifier (TypeInt) = "Int32"
 renderTypeSpecifier (TypeUnsignedInt) = "Int32"
-renderTypeSpecifier (TypeHyper) = "Hyper?"
-renderTypeSpecifier (TypeUnsignedHyper) = "UHyper"
+renderTypeSpecifier (TypeHyper) = "Int64"
+renderTypeSpecifier (TypeUnsignedHyper) = "Int64"
 renderTypeSpecifier (TypeFloat) = "Float"
 renderTypeSpecifier (TypeDouble) = "Double"
 renderTypeSpecifier (TypeQuadruple) = "Quad"
@@ -260,13 +305,9 @@ renderTypeSpecifier (TypeBool) = "Bool"
 --renderTypeSpecifier (TypeStruct StructBody x) = "Int"
 --renderTypeSpecifier (TypeUnion UnionBody x) = "Int"
 -- ? TypeIdentifier IdentifierRef ?
-renderTypeSpecifier (TypeIdentifier x) = renderTypeIdentifier x
+renderTypeSpecifier (TypeIdentifier x) = renderTypeIdentifier' x
 renderTypeSpecifier x = "Unknown"
 
-
--- ? TypeIdentifier IdentifierRef ?
-renderTypeIdentifier :: IdentifierRef -> String
-renderTypeIdentifier (IdentifierRef x) = unpack x
 
 -- data MsgBody = MsgBody
 --     { mtype :: MsgType
@@ -279,7 +320,7 @@ renderTypeDefUnion ident body =
   ++ i ++ " = " ++ i
   ++ renderUnionBody body
   ++ eol
-  where i = renderIdentifier ident
+  where i = renderTypeIdentifier ident
 
 
 renderUnionBody :: UnionBody -> String
@@ -303,7 +344,7 @@ renderDiscriminant (DiscriminantInt x) = renderIdentifier x
 renderDiscriminant (DiscriminantUnsignedInt x) = renderIdentifier x
 renderDiscriminant (DiscriminantBool x) = renderIdentifier x
 renderDiscriminant (DiscriminantEnum typeId varId) =
-  (renderIdentifier varId) ++ " :: " ++ (renderIdentifier typeId)
+  (renderIdentifier varId) ++ " :: " ++ (renderTypeIdentifier typeId)
 
 
 renderCaseSpec :: NonEmpty CaseSpec -> String

@@ -19,3 +19,8 @@ Two small modifications made to this lib:
 - `argop` and `resop` as `unsigned` in switch
 - symbol `%` - where did it come from?
 - hexadecimals in enum
+
+### Render Problems so far
+- haskell keywords as field identifiers
+- negative int const to enums
+- FATTR4_RETENTEVT_SET = 72 (Capitalization in expression)
